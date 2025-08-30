@@ -1,0 +1,172 @@
+###  Plan skryptu/programu
+
+Jak to ma działać:
+
+Użytkownik zadaje pytanie/rozkaz do lokalnego Modelu Językowego. To pytanie będzie mierzone, co do wielkości złożoności (trzy liczby,
+zmierzymy za pomocą `wc`, dostaniemy liczbę linii, słów i znaków).
+
+Następnie za pomocą regresji uprzednio wytrenowanej (użyjemy `scikit-learn`)
+oceniamy na podstawie danych z `wc`, jaki model wybrać do realizacji zadania.
+
+Realizujemy zapytanie za pomocą commandlinowego `ollama` (`ollama run ....`), mierząc czas wykonania
+przekazujemy odpowiedź do użytkownika.  Czas wykonania oraz parametry z `wc` zapisujemy, 
+zbierając w ten sposób dane.
+
+Uzytkownik będzie proszony o ocenę odpowiedzi:
+"Oceń jakość odpowiedzi, podając jedno z: 0, 1, 2, 3, 4, 5, ?,
+ przy czym '?' oznacza, że nie chcesz uwzględniać tego przypadku w statystyce".
+ 
+Zapisujemy ocenę razem z parametrami `wc` i nazwą wybranego modelu (chyba, że ktoś podał '?').
+
+Uruchamiamy ponownie trenowamie regresji (z powyższego opisu wynika, że regresja będzie bardzo lekka i łatwa, 
+niskowymiarowy problem, mało danych).  Na razie nie przejmujemy się w ogóle sprawą 
+przyrostu liczby przypadków trenujących.  To dopiero wersja wstępna.
+
+###  Zadania do wykonania dla Modelu Językowego
+
+1)  Jakie mamy środowisko?  Ubuntu, linux, python, bash.
+
+2)  Ogólny układ: uzytkownik będzie uruchamiał jeden skrypt, bashowy, 
+    o nazwie roboczej na razie `ask.sh`, który będzie w miejscu takim, 
+    że uruchomi sie zawsze, bo jest w `$PATH`, a dokładnie - w `~/bin/`.
+    
+    Pozostałe rzeczy, w tym program w Pythonie, pliki regresji, pliki danych, 
+    wszystko będzie w jednym katalogu, którego ścieżka ma być zapisana
+    w początkowej części `ask.sh` na sztywno.  Obecnie będzie to `/home/marek/work/ask/`.
+    
+    Nie przejmujemy się w ogóle sprawą `venv` dla Pythona. Dla uproszczenia
+    zakładamy, że Python ma wszystko, czego potrzebuje (importy i całe środowisko).
+    
+3)  Napisz program `regression.py` w Pythonie, który przeprowadza trening i regresję.
+    Można go uruchomić dwojako:
+        `regression.py -t trainfile modelfile`   -  trenowanie ("train") modelu za pomocą danych trenindowych z pliku `trainfile`
+                                                    i zapis wytrenowanego modelu do pliku `modelfile`
+        `regression.py -a modelfile p1 p2 p3`  -  zapytanie modelu ("ask") przy użyciu parametrów p1, p2, p3.
+        
+    Dane w pliku `trainfile` są zapisane jako plik tekstowy, oddzielony po prostu spacjami, 
+    z liniami w postaci   "model  liczba_linii   liczba_słów   liczba_znaków     czas_wykonania    ocena_użytkownika"
+
+    na przykład:
+````
+gemma3:12b 12 83 182 13.4 3
+mistral 12 83 182 103.21 2
+aya-expanse 12 83 182 34 5
+mistral 2 10 200 20.3 1
+````
+
+    W odpowiedzi na pytanie o predykcję (opcja '-a') chcemy dostać tabelkę z przewidywanymi czasami
+    oraz ocenami jakości dla wszystkich znanych modeli, na przykłád:
+    
+````
+    regression.py -a savedmodel.dat 71 239 2010
+    
+    gemma3:1b 7.5 3.42
+    gemma3:4b 12.9 4.5
+    mistral 10.5 3.5
+````
+
+    Wybór rodzaju regresora (SVR, perceptron, inne regresory z scikit-learn) powinien być
+    możliwy przez wyedytowanie pliku `regression.py` i zmianę w początkowej części tego programu.
+    Niech w komentarzu wewnątrz `regression.py` będzie to omówione.
+    
+    Nie musisz uwzględniać wszystkich możliwych regresorów, wybierz te, które są sensowne
+    w tym kontekście.
+    
+4)  Napisz program `init_train_data.sh`, który za pomocą zmyślonych przez Ciebie
+    zapytań (np. "Ile wynosi 100 razy 919.2", "Mój linux nie chce się zupgradować, dostaję dziwne niezrozumiałe 
+       komunikaty - chyba po angielsku.  Co mam robić? Poradź mi!",  itp itd.)
+       
+    przeegzaminuje wybrane modele.
+    
+    Modele, które na początek rozpatrujemy, to:
+        gemma3:1b, gemma3:4b, gemma3:12b, aya, aya-expanse
+        
+    Wykonanie operacji z modelem wygląda np. tak:
+    
+````
+marek@columbo:~/work/src/mw/src$ time ollama run gemma3:1b 'Podaj, jakie trzeba mieć predyspozycje, żeby być traderem Forex. Czy ja mogę nim być? Staraj się odpowiedzieć krótko, bo nie mam dużo czasu :-( '
+Tak, masz pewne predyspozycje, ale nie są fundamentalne. 
+
+**1. Stabilność emocji:**
+   - Niska impulsywność.
+   - Tolerancja na ryzyko.
+   - Nie wierzysz w "trychy".
+
+**2. Dobre zarządzanie kapitałem:**
+   - Określenie winny.
+   - Stop-loss.
+   - Stop-profit.
+
+**3. Analiza fundamentalna:**
+   - Zrozumienie podłoża gospodarczego.
+   - Zdolność do interpretacji danych makroekonomicznych.
+
+**4. Długoterminowy punkt widzenia:**
+   - Odejście od krótkoterminowych ruchów.
+   - Podejście "long term"
+
+**5. Systematyczność:**
+   - Regularność handlu.
+   - Nie wierzysz w "próby".
+
+**6. Stabilne dane:**
+   - Dobre dane (w połączeniu)
+
+
+**7. Dobre wiedzę:**
+   -  Znajomość zasad handlu, analizy technicznej i fundamentalnej.
+
+**8. System i strategie:**
+   -  Wypracuj plan handlowy.
+
+**To nie są "predyspozycje" w tradycyjnym sensie, ale umiejętności i myślenie, które są kluczowe dla sukcesu.**
+
+**Pamiętaj, że to wymaga czasu i pracy!**
+
+Czy chcesz, żebym rozwinął któryś z tych punktów?
+
+
+real    0m8,387s
+user    0m0,031s
+sys     0m0,031s
+````
+
+    Niech ten skrypt `init_train_data.sh` przygotuje jeden plik (albo wiele plików,  nie wiem....)
+    z tekstami zadań oraz miejscem dla człowieka (czyli mnie), gdzie należy wpisać oceny jakości.
+    
+    Poinstruuj mnie (człowieka), gdzie i jak mam te oceny wpisać.
+    Instrukcja ta niech będzie wpisana w komentarzu wewnątrz skryptu `init_train_data.sh`.
+    
+    Żeby człowiek (czyli ja) dał radę to przetworzyć, musimy ograniczyć liczbę przykładów do rozsądnej liczby, 
+    powiedzmy - co najmniej po 3 dla każdego modelu, nie więcej jednak niż po 8 dla każdego modelu.
+    
+    Człowiek przygotuje te oceny w sposób wskazany w komentarzu, a następnie, 
+    w sposób również wskazany w komentarzu - uruchomi trening wstępny modelu.
+    
+5)  Napisz skrypt `ask.sh`, który zapyta użytkownika o zadanie dla AI
+    (niech robi to jakimś bashowym mechanizmem w stylu `realine`), 
+    następnie niech pomierzy go przez `wc`, potem niech przeprowadzi 
+    predykcję za pomocą regresora, potem niech **sam zadecyduje**
+    który model wybrać, żeby miał przewidywaną jakość większą niż
+    jakiś próg, ale jednocześnie był szybki.
+    
+    Te kryteria muszą być zaszyte w skrypcie `ask.sh` i opisane w komentarzu, 
+    tak, żebym mógł sobie je w przyszłości ewentualnie zmieniać edytując po prostu `ask.sh`.
+    
+    Podajemy odpowiedź i prosimy użytkownika o ocenę.
+    Ocenę, wraz z czasem wykonania oraz parametrami `wc` zapisujemy.
+    
+    Kończymy działanie, ale najpierw przetrenowywujemy regresor.
+    Robimy to w wątku frontowym, bieżącym, na razie nie bawimy się 
+    w osobne procesy, jesli w przyszłości okaże się, że to coraz dłużej trwa, 
+    wtedy się pomyśli, co dalej.
+    
+###  Wstępna ocena.
+
+Jeśli wstępna ocena możliwości wykonania tych rzeczy okaże się trudna, możesz mi na razie
+powiedzieć, że nie zaczynasz pisać kodu, bo musisz jeszcze wyjasnić pewne wątpliwości.
+
+Możemy również robić to wszystko etapami, interaktywnie.  Daj znać, jak robimy !
+
+    
+    
