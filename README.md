@@ -14,23 +14,23 @@ Opisuję w nim eksperyment, w którym przy pomocy modelu językowego stworzyłem
 
 1. **Przygotuj dane treningowe**  
    Uruchom:
-   ```bash
+```bash
    ./init_train_data.sh
-````
+```
 
 Skrypt wygeneruje przykładowe zapytania i odpowiedzi modeli. Następnie oceń odpowiedzi w pliku wynikowym zgodnie z instrukcją w komentarzu w skrypcie.
 
 2. **Wytrenuj modele regresji**
 
-   ```bash
+```bash
    python3 regression.py -t data/initial_train_data.txt model/initial_model
-   ```
+```
 
 3. **Zadaj własne pytanie**
 
-   ```bash
+```bash
    ./ask.sh
-   ```
+```
 
    Skrypt wybierze odpowiedni model, uruchomi go przez `ollama`, wyświetli wynik i poprosi Cię o ocenę jakości. Dane zostaną zapisane i użyte do ponownego treningu regresora.
 
